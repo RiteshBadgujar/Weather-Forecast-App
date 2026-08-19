@@ -7,7 +7,9 @@ def localProperties = new Properties()
 def localPropertiesFile = rootProject.file("local.properties")
 
 if (localPropertiesFile.exists()) {
-    localProperties.load(new FileInputStream(localPropertiesFile))
+    localPropertiesFile.withInputStream { stream ->
+        localProperties.load(stream)
+    }
 }
 
 def weatherApiKey = localProperties.getProperty("WEATHER_API_KEY", "")
@@ -30,8 +32,11 @@ android {
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 
-        // API key from local.properties
-        buildConfigField "String", "WEATHER_API_KEY", "\"${weatherApiKey}\""
+        buildConfigField(
+                "String",
+                "WEATHER_API_KEY",
+                "\"${weatherApiKey}\""
+        )
     }
 
     buildTypes {
@@ -42,7 +47,6 @@ android {
         }
     }
 
-    // Enable BuildConfig generation
     buildFeatures {
         buildConfig true
     }
