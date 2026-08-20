@@ -71,6 +71,10 @@ public class MainActivity extends ComponentActivity {
     private static final String WEATHER_ICON_URL =
             "https://openweathermap.org/img/wn/%s@2x.png";
 
+    // =========================================================
+    // ACTIVITY CREATED
+    // =========================================================
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -89,7 +93,7 @@ public class MainActivity extends ComponentActivity {
     }
 
     // =========================================================
-    // INITIALIZE ALL VIEWS
+    // INITIALIZE VIEWS
     // =========================================================
 
     private void initializeViews() {
@@ -192,11 +196,11 @@ public class MainActivity extends ComponentActivity {
             return;
         }
 
-        searchButton.setEnabled(false);
-        searchButton.setText("Loading...");
+        // Start loading
+        setLoading(true);
 
         // =====================================================
-        // CURRENT WEATHER REQUEST
+        // CURRENT WEATHER API REQUEST
         // =====================================================
 
         Call<WeatherResponse> currentWeatherCall =
@@ -214,8 +218,8 @@ public class MainActivity extends ComponentActivity {
                             Call<WeatherResponse> call,
                             Response<WeatherResponse> response) {
 
-                        searchButton.setEnabled(true);
-                        searchButton.setText("Search");
+                        // Stop loading
+                        setLoading(false);
 
                         if (response.isSuccessful()
                                 && response.body() != null) {
@@ -224,7 +228,7 @@ public class MainActivity extends ComponentActivity {
                                     response.body()
                             );
 
-                            // Get 5-day forecast
+                            // Request 5-day forecast
                             getFiveDayForecast(
                                     city,
                                     apiKey
@@ -241,22 +245,39 @@ public class MainActivity extends ComponentActivity {
                             Call<WeatherResponse> call,
                             Throwable t) {
 
-                        searchButton.setEnabled(true);
-                        searchButton.setText("Search");
+                        // Stop loading
+                        setLoading(false);
 
-                        Toast.makeText(
-                                MainActivity.this,
-                                "Network error: "
-                                        + t.getMessage(),
-                                Toast.LENGTH_LONG
-                        ).show();
+                        handleNetworkError(t);
                     }
                 }
         );
     }
 
     // =========================================================
-    // CURRENT WEATHER ERROR
+    // LOADING STATE
+    // =========================================================
+
+    private void setLoading(boolean loading) {
+
+        searchButton.setEnabled(!loading);
+
+        if (loading) {
+
+            searchButton.setText(
+                    "Loading..."
+            );
+
+        } else {
+
+            searchButton.setText(
+                    "Search"
+            );
+        }
+    }
+
+    // =========================================================
+    // CURRENT WEATHER API ERROR
     // =========================================================
 
     private void handleApiError(
@@ -295,6 +316,96 @@ public class MainActivity extends ComponentActivity {
                 message =
                         "API error: HTTP " + code;
                 break;
+        }
+
+        Toast.makeText(
+                this,
+                message,
+                Toast.LENGTH_LONG
+        ).show();
+    }
+
+    // =========================================================
+    // FORECAST API ERROR
+    // =========================================================
+
+    private void handleForecastApiError(
+            Response<ForecastResponse> response) {
+
+        int code = response.code();
+
+        String message;
+
+        switch (code) {
+
+            case 400:
+                message =
+                        "Invalid forecast request";
+                break;
+
+            case 401:
+                message =
+                        "Invalid or inactive API key";
+                break;
+
+            case 404:
+                message =
+                        "Forecast data not found";
+                break;
+
+            case 429:
+                message =
+                        "Forecast API limit exceeded";
+                break;
+
+            case 500:
+                message =
+                        "Forecast service unavailable";
+                break;
+
+            default:
+                message =
+                        "Forecast API error: HTTP "
+                                + code;
+                break;
+        }
+
+        Toast.makeText(
+                this,
+                message,
+                Toast.LENGTH_LONG
+        ).show();
+    }
+
+    // =========================================================
+    // NETWORK ERROR
+    // =========================================================
+
+    private void handleNetworkError(Throwable t) {
+
+        String message;
+
+        if (t instanceof java.net.UnknownHostException) {
+
+            message =
+                    "No internet connection";
+
+        } else if (
+                t instanceof java.net.SocketTimeoutException) {
+
+            message =
+                    "Connection timed out. Please try again";
+
+        } else if (
+                t instanceof java.io.IOException) {
+
+            message =
+                    "Network connection failed";
+
+        } else {
+
+            message =
+                    "Unable to load weather data";
         }
 
         Toast.makeText(
@@ -431,12 +542,9 @@ public class MainActivity extends ComponentActivity {
 
                         } else {
 
-                            Toast.makeText(
-                                    MainActivity.this,
-                                    "Forecast API error: HTTP "
-                                            + response.code(),
-                                    Toast.LENGTH_LONG
-                            ).show();
+                            handleForecastApiError(
+                                    response
+                            );
                         }
                     }
 
@@ -445,12 +553,7 @@ public class MainActivity extends ComponentActivity {
                             Call<ForecastResponse> call,
                             Throwable t) {
 
-                        Toast.makeText(
-                                MainActivity.this,
-                                "Forecast network error: "
-                                        + t.getMessage(),
-                                Toast.LENGTH_LONG
-                        ).show();
+                        handleNetworkError(t);
                     }
                 }
         );
@@ -476,11 +579,12 @@ public class MainActivity extends ComponentActivity {
             return;
         }
 
-        List<ForecastResponse.ForecastItem> forecastList =
+        List<ForecastResponse.ForecastItem>
+                forecastList =
                 forecast.getForecastList();
 
         // =====================================================
-        // Determine timezone
+        // TIMEZONE
         // =====================================================
 
         TimeZone timeZone =
@@ -502,7 +606,7 @@ public class MainActivity extends ComponentActivity {
         }
 
         // =====================================================
-        // Group forecast records by date
+        // GROUP FORECAST BY DATE
         // =====================================================
 
         Map<String,
@@ -516,7 +620,9 @@ public class MainActivity extends ComponentActivity {
                         Locale.getDefault()
                 );
 
-        dateFormat.setTimeZone(timeZone);
+        dateFormat.setTimeZone(
+                timeZone
+        );
 
         for (ForecastResponse.ForecastItem item
                 : forecastList) {
@@ -530,7 +636,8 @@ public class MainActivity extends ComponentActivity {
             String dateKey =
                     dateFormat.format(date);
 
-            if (!dailyForecast.containsKey(dateKey)) {
+            if (!dailyForecast.containsKey(
+                    dateKey)) {
 
                 dailyForecast.put(
                         dateKey,
@@ -543,12 +650,13 @@ public class MainActivity extends ComponentActivity {
                     dailyForecast.get(dateKey);
 
             if (itemsForDate != null) {
+
                 itemsForDate.add(item);
             }
         }
 
         // =====================================================
-        // Display first five days
+        // DISPLAY FIRST FIVE DAYS
         // =====================================================
 
         int dayIndex = 0;
@@ -572,7 +680,7 @@ public class MainActivity extends ComponentActivity {
         }
 
         // =====================================================
-        // Clear unused forecast rows
+        // CLEAR UNUSED ROWS
         // =====================================================
 
         for (int i = dayIndex; i < 5; i++) {
@@ -598,7 +706,9 @@ public class MainActivity extends ComponentActivity {
             List<ForecastResponse.ForecastItem> items,
             TimeZone timeZone) {
 
-        if (items == null || items.isEmpty()) {
+        if (items == null
+                || items.isEmpty()) {
+
             return;
         }
 
@@ -615,7 +725,7 @@ public class MainActivity extends ComponentActivity {
                 Integer.MAX_VALUE;
 
         // =====================================================
-        // Find daily min/max
+        // FIND DAILY MIN/MAX
         // =====================================================
 
         for (ForecastResponse.ForecastItem item
@@ -642,7 +752,7 @@ public class MainActivity extends ComponentActivity {
             }
 
             // =================================================
-            // Select weather condition closest to 12 PM
+            // SELECT CONDITION CLOSEST TO NOON
             // =================================================
 
             Date date =
@@ -678,7 +788,7 @@ public class MainActivity extends ComponentActivity {
         }
 
         // =====================================================
-        // Day name
+        // DAY NAME
         // =====================================================
 
         String dayName =
@@ -692,7 +802,7 @@ public class MainActivity extends ComponentActivity {
                 .setText(dayName);
 
         // =====================================================
-        // Weather icon
+        // WEATHER ICON
         // =====================================================
 
         String iconCode = null;
@@ -713,7 +823,7 @@ public class MainActivity extends ComponentActivity {
         );
 
         // =====================================================
-        // Temperature
+        // FALLBACK TEMPERATURE
         // =====================================================
 
         if (minTemperature == Double.MAX_VALUE
@@ -733,6 +843,10 @@ public class MainActivity extends ComponentActivity {
                             .getMain()
                             .getTemperature();
         }
+
+        // =====================================================
+        // DISPLAY TEMPERATURE
+        // =====================================================
 
         forecastTempTextViews[index]
                 .setText(
@@ -759,7 +873,9 @@ public class MainActivity extends ComponentActivity {
 
         if (TextUtils.isEmpty(iconCode)) {
 
-            imageView.setImageDrawable(null);
+            imageView.setImageDrawable(
+                    null
+            );
 
             return;
         }
@@ -832,7 +948,9 @@ public class MainActivity extends ComponentActivity {
 
     private String capitalize(String text) {
 
-        if (text == null || text.isEmpty()) {
+        if (text == null
+                || text.isEmpty()) {
+
             return "";
         }
 
