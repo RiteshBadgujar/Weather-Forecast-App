@@ -4,12 +4,14 @@ import android.os.Bundle;
 import android.text.TextUtils;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.ComponentActivity;
 import androidx.activity.EdgeToEdge;
 
+import com.bumptech.glide.Glide;
 import com.ritesh.weatherforecastapp.api.RetrofitClient;
 import com.ritesh.weatherforecastapp.api.WeatherApi;
 import com.ritesh.weatherforecastapp.model.ForecastResponse;
@@ -38,7 +40,7 @@ public class MainActivity extends ComponentActivity {
     private Button searchButton;
 
     private TextView cityTextView;
-    private TextView weatherIconTextView;
+    private ImageView weatherIconImageView;
     private TextView temperatureTextView;
     private TextView weatherTextView;
     private TextView feelsLikeTextView;
@@ -53,7 +55,7 @@ public class MainActivity extends ComponentActivity {
     // =========================================================
 
     private TextView[] forecastDayTextViews;
-    private TextView[] forecastIconTextViews;
+    private ImageView[] forecastIconImageViews;
     private TextView[] forecastTempTextViews;
 
     // =========================================================
@@ -61,6 +63,13 @@ public class MainActivity extends ComponentActivity {
     // =========================================================
 
     private WeatherApi weatherApi;
+
+    // =========================================================
+    // OPENWEATHER ICON URL
+    // =========================================================
+
+    private static final String WEATHER_ICON_URL =
+            "https://openweathermap.org/img/wn/%s@2x.png";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -86,14 +95,17 @@ public class MainActivity extends ComponentActivity {
     private void initializeViews() {
 
         // Current weather
-        cityEditText = findViewById(R.id.cityEditText);
-        searchButton = findViewById(R.id.searchButton);
+        cityEditText =
+                findViewById(R.id.cityEditText);
+
+        searchButton =
+                findViewById(R.id.searchButton);
 
         cityTextView =
                 findViewById(R.id.cityTextView);
 
-        weatherIconTextView =
-                findViewById(R.id.weatherIconTextView);
+        weatherIconImageView =
+                findViewById(R.id.weatherIconImageView);
 
         temperatureTextView =
                 findViewById(R.id.temperatureTextView);
@@ -116,10 +128,7 @@ public class MainActivity extends ComponentActivity {
         visibilityTextView =
                 findViewById(R.id.visibilityTextView);
 
-        // =====================================================
-        // Forecast Day TextViews
-        // =====================================================
-
+        // Forecast days
         forecastDayTextViews = new TextView[]{
                 findViewById(R.id.forecastDay1TextView),
                 findViewById(R.id.forecastDay2TextView),
@@ -128,22 +137,16 @@ public class MainActivity extends ComponentActivity {
                 findViewById(R.id.forecastDay5TextView)
         };
 
-        // =====================================================
-        // Forecast Icon TextViews
-        // =====================================================
-
-        forecastIconTextViews = new TextView[]{
-                findViewById(R.id.forecastIcon1TextView),
-                findViewById(R.id.forecastIcon2TextView),
-                findViewById(R.id.forecastIcon3TextView),
-                findViewById(R.id.forecastIcon4TextView),
-                findViewById(R.id.forecastIcon5TextView)
+        // Forecast icons
+        forecastIconImageViews = new ImageView[]{
+                findViewById(R.id.forecastIcon1ImageView),
+                findViewById(R.id.forecastIcon2ImageView),
+                findViewById(R.id.forecastIcon3ImageView),
+                findViewById(R.id.forecastIcon4ImageView),
+                findViewById(R.id.forecastIcon5ImageView)
         };
 
-        // =====================================================
-        // Forecast Temperature TextViews
-        // =====================================================
-
+        // Forecast temperatures
         forecastTempTextViews = new TextView[]{
                 findViewById(R.id.forecastTemp1TextView),
                 findViewById(R.id.forecastTemp2TextView),
@@ -217,12 +220,11 @@ public class MainActivity extends ComponentActivity {
                         if (response.isSuccessful()
                                 && response.body() != null) {
 
-                            // Update current weather
                             updateWeatherUI(
                                     response.body()
                             );
 
-                            // Get forecast
+                            // Get 5-day forecast
                             getFiveDayForecast(
                                     city,
                                     apiKey
@@ -391,10 +393,9 @@ public class MainActivity extends ComponentActivity {
         );
 
         // Current weather icon
-        weatherIconTextView.setText(
-                getWeatherEmoji(
-                        currentWeather.getIcon()
-                )
+        loadWeatherIcon(
+                currentWeather.getIcon(),
+                weatherIconImageView
         );
     }
 
@@ -478,9 +479,9 @@ public class MainActivity extends ComponentActivity {
         List<ForecastResponse.ForecastItem> forecastList =
                 forecast.getForecastList();
 
-        // -----------------------------------------------------
+        // =====================================================
         // Determine timezone
-        // -----------------------------------------------------
+        // =====================================================
 
         TimeZone timeZone =
                 TimeZone.getDefault();
@@ -500,12 +501,13 @@ public class MainActivity extends ComponentActivity {
                     );
         }
 
-        // -----------------------------------------------------
+        // =====================================================
         // Group forecast records by date
-        // -----------------------------------------------------
+        // =====================================================
 
         Map<String,
-                List<ForecastResponse.ForecastItem>> dailyForecast =
+                List<ForecastResponse.ForecastItem>>
+                dailyForecast =
                 new LinkedHashMap<>();
 
         SimpleDateFormat dateFormat =
@@ -521,7 +523,8 @@ public class MainActivity extends ComponentActivity {
 
             Date date =
                     new Date(
-                            item.getTimestamp() * 1000L
+                            item.getTimestamp()
+                                    * 1000L
                     );
 
             String dateKey =
@@ -535,14 +538,18 @@ public class MainActivity extends ComponentActivity {
                 );
             }
 
-            dailyForecast
-                    .get(dateKey)
-                    .add(item);
+            List<ForecastResponse.ForecastItem>
+                    itemsForDate =
+                    dailyForecast.get(dateKey);
+
+            if (itemsForDate != null) {
+                itemsForDate.add(item);
+            }
         }
 
-        // -----------------------------------------------------
+        // =====================================================
         // Display first five days
-        // -----------------------------------------------------
+        // =====================================================
 
         int dayIndex = 0;
 
@@ -564,19 +571,20 @@ public class MainActivity extends ComponentActivity {
             dayIndex++;
         }
 
-        // -----------------------------------------------------
+        // =====================================================
         // Clear unused forecast rows
-        // -----------------------------------------------------
+        // =====================================================
 
         for (int i = dayIndex; i < 5; i++) {
 
-            forecastDayTextViews[i].setText("--");
+            forecastDayTextViews[i]
+                    .setText("--");
 
-            forecastIconTextViews[i].setText("☀");
+            forecastIconImageViews[i]
+                    .setImageDrawable(null);
 
-            forecastTempTextViews[i].setText(
-                    "--° / --°"
-            );
+            forecastTempTextViews[i]
+                    .setText("--° / --°");
         }
     }
 
@@ -606,9 +614,9 @@ public class MainActivity extends ComponentActivity {
         int closestToNoon =
                 Integer.MAX_VALUE;
 
-        // -----------------------------------------------------
+        // =====================================================
         // Find daily min/max
-        // -----------------------------------------------------
+        // =====================================================
 
         for (ForecastResponse.ForecastItem item
                 : items) {
@@ -633,9 +641,9 @@ public class MainActivity extends ComponentActivity {
                 maxTemperature = max;
             }
 
-            // -------------------------------------------------
+            // =================================================
             // Select weather condition closest to 12 PM
-            // -------------------------------------------------
+            // =================================================
 
             Date date =
                     new Date(
@@ -669,9 +677,9 @@ public class MainActivity extends ComponentActivity {
             }
         }
 
-        // -----------------------------------------------------
+        // =====================================================
         // Day name
-        // -----------------------------------------------------
+        // =====================================================
 
         String dayName =
                 getDayName(
@@ -683,33 +691,33 @@ public class MainActivity extends ComponentActivity {
         forecastDayTextViews[index]
                 .setText(dayName);
 
-        // -----------------------------------------------------
+        // =====================================================
         // Weather icon
-        // -----------------------------------------------------
+        // =====================================================
 
-        String weatherEmoji = "☀";
+        String iconCode = null;
 
         if (selectedItem.getWeather() != null
                 && !selectedItem.getWeather().isEmpty()) {
 
-            String iconCode =
+            iconCode =
                     selectedItem
                             .getWeather()
                             .get(0)
                             .getIcon();
-
-            weatherEmoji =
-                    getWeatherEmoji(iconCode);
         }
 
-        forecastIconTextViews[index]
-                .setText(weatherEmoji);
+        loadWeatherIcon(
+                iconCode,
+                forecastIconImageViews[index]
+        );
 
-        // -----------------------------------------------------
+        // =====================================================
         // Temperature
-        // -----------------------------------------------------
+        // =====================================================
 
-        if (minTemperature == Double.MAX_VALUE) {
+        if (minTemperature == Double.MAX_VALUE
+                && selectedItem.getMain() != null) {
 
             minTemperature =
                     selectedItem
@@ -717,7 +725,8 @@ public class MainActivity extends ComponentActivity {
                             .getTemperature();
         }
 
-        if (maxTemperature == -Double.MAX_VALUE) {
+        if (maxTemperature == -Double.MAX_VALUE
+                && selectedItem.getMain() != null) {
 
             maxTemperature =
                     selectedItem
@@ -734,6 +743,37 @@ public class MainActivity extends ComponentActivity {
                                 minTemperature
                         )
                 );
+    }
+
+    // =========================================================
+    // LOAD WEATHER ICON USING GLIDE
+    // =========================================================
+
+    private void loadWeatherIcon(
+            String iconCode,
+            ImageView imageView) {
+
+        if (imageView == null) {
+            return;
+        }
+
+        if (TextUtils.isEmpty(iconCode)) {
+
+            imageView.setImageDrawable(null);
+
+            return;
+        }
+
+        String iconUrl =
+                String.format(
+                        Locale.getDefault(),
+                        WEATHER_ICON_URL,
+                        iconCode
+                );
+
+        Glide.with(this)
+                .load(iconUrl)
+                .into(imageView);
     }
 
     // =========================================================
@@ -757,7 +797,9 @@ public class MainActivity extends ComponentActivity {
                             Locale.getDefault()
                     );
 
-            inputFormat.setTimeZone(timeZone);
+            inputFormat.setTimeZone(
+                    timeZone
+            );
 
             Date date =
                     inputFormat.parse(dateKey);
@@ -772,75 +814,15 @@ public class MainActivity extends ComponentActivity {
                             Locale.getDefault()
                     );
 
-            outputFormat.setTimeZone(timeZone);
+            outputFormat.setTimeZone(
+                    timeZone
+            );
 
             return outputFormat.format(date);
 
         } catch (Exception e) {
 
             return dateKey;
-        }
-    }
-
-    // =========================================================
-    // WEATHER ICON
-    // =========================================================
-
-    private String getWeatherEmoji(
-            String iconCode) {
-
-        if (iconCode == null
-                || iconCode.isEmpty()) {
-
-            return "☀";
-        }
-
-        switch (iconCode) {
-
-            case "01d":
-                return "☀";
-
-            case "01n":
-                return "🌙";
-
-            case "02d":
-                return "🌤";
-
-            case "02n":
-                return "☁";
-
-            case "03d":
-            case "03n":
-                return "☁";
-
-            case "04d":
-            case "04n":
-                return "☁";
-
-            case "09d":
-            case "09n":
-                return "🌧";
-
-            case "10d":
-                return "🌦";
-
-            case "10n":
-                return "🌧";
-
-            case "11d":
-            case "11n":
-                return "⛈";
-
-            case "13d":
-            case "13n":
-                return "❄";
-
-            case "50d":
-            case "50n":
-                return "🌫";
-
-            default:
-                return "☀";
         }
     }
 
