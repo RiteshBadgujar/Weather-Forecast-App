@@ -174,7 +174,9 @@ public class MainActivity extends ComponentActivity {
         if (TextUtils.isEmpty(city)) {
 
             cityEditText.setError(
-                    "Enter a city name"
+                    getString(
+                            R.string.enter_city_name
+                    )
             );
 
             cityEditText.requestFocus();
@@ -189,7 +191,7 @@ public class MainActivity extends ComponentActivity {
 
             Toast.makeText(
                     this,
-                    "API key is missing",
+                    R.string.api_key_missing,
                     Toast.LENGTH_LONG
             ).show();
 
@@ -265,13 +267,13 @@ public class MainActivity extends ComponentActivity {
         if (loading) {
 
             searchButton.setText(
-                    "Loading..."
+                    R.string.loading
             );
 
         } else {
 
             searchButton.setText(
-                    "Search"
+                    R.string.search
             );
         }
     }
@@ -290,31 +292,46 @@ public class MainActivity extends ComponentActivity {
         switch (code) {
 
             case 400:
-                message = "Invalid request";
+                message =
+                        getString(
+                                R.string.invalid_request
+                        );
                 break;
 
             case 401:
                 message =
-                        "Invalid or inactive API key";
+                        getString(
+                                R.string.invalid_api_key
+                        );
                 break;
 
             case 404:
-                message = "City not found";
+                message =
+                        getString(
+                                R.string.city_not_found
+                        );
                 break;
 
             case 429:
                 message =
-                        "API request limit exceeded";
+                        getString(
+                                R.string.api_limit_exceeded
+                        );
                 break;
 
             case 500:
                 message =
-                        "Weather server error";
+                        getString(
+                                R.string.weather_server_error
+                        );
                 break;
 
             default:
                 message =
-                        "API error: HTTP " + code;
+                        getString(
+                                R.string.api_error_http,
+                                code
+                        );
                 break;
         }
 
@@ -340,33 +357,45 @@ public class MainActivity extends ComponentActivity {
 
             case 400:
                 message =
-                        "Invalid forecast request";
+                        getString(
+                                R.string.invalid_forecast_request
+                        );
                 break;
 
             case 401:
                 message =
-                        "Invalid or inactive API key";
+                        getString(
+                                R.string.invalid_api_key
+                        );
                 break;
 
             case 404:
                 message =
-                        "Forecast data not found";
+                        getString(
+                                R.string.forecast_not_found
+                        );
                 break;
 
             case 429:
                 message =
-                        "Forecast API limit exceeded";
+                        getString(
+                                R.string.forecast_api_limit
+                        );
                 break;
 
             case 500:
                 message =
-                        "Forecast service unavailable";
+                        getString(
+                                R.string.forecast_unavailable
+                        );
                 break;
 
             default:
                 message =
-                        "Forecast API error: HTTP "
-                                + code;
+                        getString(
+                                R.string.forecast_api_error_http,
+                                code
+                        );
                 break;
         }
 
@@ -381,31 +410,40 @@ public class MainActivity extends ComponentActivity {
     // NETWORK ERROR
     // =========================================================
 
-    private void handleNetworkError(Throwable t) {
+    private void handleNetworkError(
+            Throwable t) {
 
         String message;
 
         if (t instanceof java.net.UnknownHostException) {
 
             message =
-                    "No internet connection";
+                    getString(
+                            R.string.no_internet
+                    );
 
         } else if (
                 t instanceof java.net.SocketTimeoutException) {
 
             message =
-                    "Connection timed out. Please try again";
+                    getString(
+                            R.string.connection_timeout
+                    );
 
         } else if (
                 t instanceof java.io.IOException) {
 
             message =
-                    "Network connection failed";
+                    getString(
+                            R.string.network_failed
+                    );
 
         } else {
 
             message =
-                    "Unable to load weather data";
+                    getString(
+                            R.string.weather_load_failed
+                    );
         }
 
         Toast.makeText(
@@ -429,7 +467,7 @@ public class MainActivity extends ComponentActivity {
 
             Toast.makeText(
                     this,
-                    "Invalid weather data received",
+                    R.string.invalid_weather_data,
                     Toast.LENGTH_LONG
             ).show();
 
@@ -467,37 +505,42 @@ public class MainActivity extends ComponentActivity {
 
         // Feels like
         feelsLikeTextView.setText(
-                String.format(
-                        Locale.getDefault(),
-                        "Feels like %.0f°C",
+                getString(
+                        R.string.feels_like,
                         main.getFeelsLike()
                 )
         );
 
         // Humidity
         humidityTextView.setText(
-                main.getHumidity() + "%"
+                getString(
+                        R.string.humidity,
+                        main.getHumidity()
+                )
         );
 
         // Wind
         windTextView.setText(
-                String.format(
-                        Locale.getDefault(),
-                        "%.1f m/s",
+                getString(
+                        R.string.wind_speed,
                         wind.getSpeed()
                 )
         );
 
         // Pressure
         pressureTextView.setText(
-                main.getPressure() + " hPa"
+                getString(
+                        R.string.pressure,
+                        String.valueOf(
+                                main.getPressure()
+                        )
+                )
         );
 
         // Visibility
         visibilityTextView.setText(
-                String.format(
-                        Locale.getDefault(),
-                        "%.1f km",
+                getString(
+                        R.string.visibility,
                         weather.getVisibility()
                                 / 1000.0
                 )
@@ -572,7 +615,7 @@ public class MainActivity extends ComponentActivity {
 
             Toast.makeText(
                     this,
-                    "No forecast data available",
+                    R.string.no_forecast_data,
                     Toast.LENGTH_LONG
             ).show();
 
@@ -686,13 +729,17 @@ public class MainActivity extends ComponentActivity {
         for (int i = dayIndex; i < 5; i++) {
 
             forecastDayTextViews[i]
-                    .setText("--");
+                    .setText(
+                            R.string.empty_forecast
+                    );
 
             forecastIconImageViews[i]
                     .setImageDrawable(null);
 
             forecastTempTextViews[i]
-                    .setText("--° / --°");
+                    .setText(
+                            R.string.empty_temperature
+                    );
         }
     }
 
@@ -850,9 +897,8 @@ public class MainActivity extends ComponentActivity {
 
         forecastTempTextViews[index]
                 .setText(
-                        String.format(
-                                Locale.getDefault(),
-                                "%.0f° / %.0f°",
+                        getString(
+                                R.string.temperature_range,
                                 maxTemperature,
                                 minTemperature
                         )
@@ -902,7 +948,10 @@ public class MainActivity extends ComponentActivity {
             TimeZone timeZone) {
 
         if (index == 0) {
-            return "Today";
+
+            return getString(
+                    R.string.today
+            );
         }
 
         try {
